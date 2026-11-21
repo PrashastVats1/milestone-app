@@ -6,12 +6,13 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useMilestone } from "@/lib/store";
 import { blankProjectInput } from "@/lib/validate";
-import { ProjectForm } from "./project-form";
+import { DraftSavedDialog, ProjectForm } from "./project-form";
 
 export function NewProjectScreen() {
   const router = useRouter();
   const { createProject, role, hydrated } = useMilestone();
   const [initial] = useState(() => blankProjectInput());
+  const [savedId, setSavedId] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "New project · Milestone";
@@ -49,11 +50,24 @@ export function NewProjectScreen() {
           intro="This stays a draft until the client accepts it. You can edit milestones until then. Switch to Client in the header when you want to demo the acceptance."
           onSubmit={(input) => {
             const result = createProject(input);
-            if (result.ok) router.push(`/projects/${result.id}`);
-            return result;
+            if (result.ok) setSavedId(result.id);
+            return result.ok ? { ok: true } : result;
           }}
         />
       </div>
+      {savedId ? (
+        <DraftSavedDialog
+          onContinue={() => {
+            const id = savedId;
+            setSavedId(null);
+            router.push(`/projects/${id}`);
+          }}
+          onBack={() => {
+            setSavedId(null);
+            router.push("/");
+          }}
+        />
+      ) : null}
     </div>
   );
 }

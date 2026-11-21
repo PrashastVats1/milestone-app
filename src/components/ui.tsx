@@ -30,10 +30,12 @@ export function Field({
 }
 
 export function MoneyField({
+  id,
   value,
   onChange,
   placeholder = "0",
 }: {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -44,7 +46,8 @@ export function MoneyField({
         ₹
       </span>
       <input
-        className={cn(inputClass, "pl-8")}
+        id={id}
+        className={cn(inputClass, "scroll-mt-28 pl-8")}
         inputMode="numeric"
         value={value}
         placeholder={placeholder}
@@ -59,18 +62,23 @@ export function LineEditor({
   onChange,
   placeholder,
   addLabel,
+  firstInputId,
+  addButtonId,
 }: {
   items: string[];
   onChange: (items: string[]) => void;
   placeholder: string;
   addLabel: string;
+  firstInputId?: string;
+  addButtonId?: string;
 }) {
   return (
     <div className="space-y-2">
       {items.map((item, index) => (
         <div key={index} className="flex min-w-0 gap-2">
           <input
-            className={inputClass}
+            id={index === 0 ? firstInputId : undefined}
+            className={cn(inputClass, "scroll-mt-28")}
             value={item}
             placeholder={placeholder}
             onChange={(event) => {
@@ -90,7 +98,8 @@ export function LineEditor({
       ))}
       <button
         type="button"
-        className="rounded-full border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink hover:border-ink/30"
+        id={addButtonId}
+        className="scroll-mt-28 rounded-full border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink hover:border-ink/30"
         onClick={() => onChange([...items, ""])}
       >
         {addLabel}

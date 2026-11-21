@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { use, useEffect, useRef, useState } from "react";
 import { formatDate, formatInr } from "@/lib/format";
@@ -14,7 +15,7 @@ import {
 import { useMilestone } from "@/lib/store";
 import { projectToInput } from "@/lib/validate";
 import { ChangeSection } from "./changes";
-import { ProjectForm } from "./project-form";
+import { DraftSavedDialog, ProjectForm } from "./project-form";
 import { MilestoneList, OriginalAgreement } from "./scope";
 import { ActivityTimeline } from "./timeline";
 import { actionLinkClass, Button, SectionHeading, Stat, StatusBadge } from "./ui";
@@ -197,25 +198,36 @@ function ActionBanner({ title, body, href }: { title: string; body: string; href
 }
 
 function DraftEditor({ projectId }: { projectId: string }) {
+  const router = useRouter();
   const { projects, updateDraft } = useMilestone();
   const project = projects.find((item) => item.id === projectId);
   const [saved, setSaved] = useState(false);
   if (!project) return null;
 
   return (
-    <ProjectForm
-      key={project.id}
-      initial={projectToInput(project)}
-      allowRepeat
-      submitLabel="Save draft"
-      savedNote={saved ? "Draft saved. Switch to Client when you want to accept it." : null}
-      intro="Edit anything until the client accepts. After acceptance, the original is locked and further work goes through a change request."
-      onSubmit={(input) => {
-        const result = updateDraft(project.id, input);
-        setSaved(result.ok);
-        return result;
-      }}
-    />
+    <>
+      <ProjectForm
+        key={project.id}
+        initial={projectToInput(project)}
+        allowRepeat
+        submitLabel="Save draft"
+        intro="Edit anything until the client accepts. After acceptance, the original is locked and further work goes through a change request."
+        onSubmit={(input) => {
+          const result = updateDraft(project.id, input);
+          setSaved(result.ok);
+          return result;
+        }}
+      />
+      {saved ? (
+        <DraftSavedDialog
+          onContinue={() => setSaved(false)}
+          onBack={() => {
+            setSaved(false);
+            router.push("/");
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 
