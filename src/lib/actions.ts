@@ -1,4 +1,4 @@
-import { addDays, formatDate, formatInr, plural } from "./format";
+import { addDays, formatDate, formatInr, formatReason, plural } from "./format";
 import type {
   Activity,
   AgreementSnapshot,
@@ -130,11 +130,16 @@ export function requestTimelineChange(project: Project, input: NormalizedTimelin
   }
   const milestone = project.milestones.find((item) => item.id === input.milestoneId);
   if (!milestone) throw new Error("That milestone is not on this project.");
+  if (input.deadline <= milestone.deadline) {
+    throw new Error(
+      `The revised deadline must be later than the current deadline, ${formatDate(milestone.deadline)}.`,
+    );
+  }
 
   const costNote = input.cost > 0 ? ` and ${formatInr(input.cost)} extra` : "";
   const activity = entry(
     "freelancer",
-    `Requested a timeline revision for “${milestone.title}”: due ${formatDate(input.deadline)}${costNote}. Reason: ${input.reason}.`,
+    `Requested a timeline revision for “${milestone.title}”: due ${formatDate(input.deadline)}${costNote}. Reason: ${formatReason(input.reason, input.reasonDetail)}.`,
   );
   const change: ChangeRequest = {
     id: crypto.randomUUID(),
@@ -142,6 +147,7 @@ export function requestTimelineChange(project: Project, input: NormalizedTimelin
     title: milestone.title,
     description: input.explanation,
     reason: input.reason,
+    reasonDetail: input.reasonDetail || undefined,
     requestedAt: activity.at,
     status: "proposed",
     affectedMilestoneId: milestone.id,

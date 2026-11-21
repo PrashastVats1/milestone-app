@@ -215,13 +215,17 @@ export function validateTimelineRequest(
 ): { ok: true; value: NormalizedTimelineRequest } | { ok: false; error: string } {
   const explanation = input.explanation.trim();
   const reason = input.reason.trim();
+  const reasonDetail = reason === "Other" ? (input.reasonDetail ?? "").trim() : "";
   const cost = input.cost.trim() === "" ? 0 : parseAmount(input.cost);
 
   if (!input.milestoneId) return { ok: false, error: "Choose the milestone this affects." };
   if (!TIMELINE_REASONS.includes(reason as (typeof TIMELINE_REASONS)[number])) {
     return { ok: false, error: "Choose a reason for the revision." };
   }
-  if (!explanation) return { ok: false, error: "Explain why the timeline needs to change." };
+  if (reason === "Other" && !reasonDetail) {
+    return { ok: false, error: "Describe the reason. This is separate from the explanation below." };
+  }
+  if (!explanation) return { ok: false, error: "Explain how this affects the milestone." };
   if (!DATE.test(input.deadline)) return { ok: false, error: "Set the revised deadline." };
   if (cost === null) return { ok: false, error: "Enter additional cost, or leave it blank for none." };
 
@@ -230,6 +234,7 @@ export function validateTimelineRequest(
     value: {
       milestoneId: input.milestoneId,
       reason,
+      reasonDetail,
       explanation,
       deadline: input.deadline,
       cost,

@@ -90,23 +90,23 @@ export function ProjectForm({
   }
 
   return (
-    <form className="space-y-8" onSubmit={handleSubmit} noValidate>
+    <form className="space-y-6 sm:space-y-8" onSubmit={handleSubmit} noValidate>
       <div>
-        <p className="text-[11px] font-medium tracking-[0.16em] text-accent uppercase">Agreement</p>
-        <h1 className="mt-1 font-display text-4xl tracking-tight">Write the scope</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">{intro}</p>
+        <p className="text-[11px] font-medium tracking-[0.14em] text-accent uppercase sm:tracking-[0.16em]">Agreement</p>
+        <h1 className="mt-1 font-display text-3xl tracking-tight sm:text-4xl">Write the scope</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-5 text-muted sm:mt-3 sm:leading-6">{intro}</p>
       </div>
 
       {savedNote ? (
         <p className="rounded-2xl bg-good-soft px-4 py-3 text-sm text-good">{savedNote}</p>
       ) : null}
-      <div ref={errorRef} className="scroll-mt-28">
+      <div ref={errorRef} className="scroll-mt-36">
         <ErrorList errors={errors} />
       </div>
 
-      <section className="rounded-3xl border border-line bg-card p-5 sm:p-7">
-        <h2 className="font-display text-2xl tracking-tight">1 · Project</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <section className="rounded-2xl border border-line bg-card p-4 sm:rounded-3xl sm:p-7">
+        <h2 className="font-display text-xl tracking-tight sm:text-2xl">1 · Project</h2>
+        <div className="mt-3 grid gap-3 sm:mt-5 sm:grid-cols-2 sm:gap-4">
           <div className="sm:col-span-2">
             <Field label="Project name">
               <input
@@ -203,10 +203,10 @@ export function ProjectForm({
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3 sm:space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-2xl tracking-tight">2 · Milestones</h2>
+            <h2 className="font-display text-xl tracking-tight sm:text-2xl">2 · Milestones</h2>
             <p className="mt-1 text-sm text-muted">
               Each one needs deliverables, acceptance criteria, an amount, and a deadline.
             </p>
@@ -226,7 +226,7 @@ export function ProjectForm({
         </div>
 
         {input.milestones.map((milestone, index) => (
-          <article key={milestone.id} className="rounded-3xl border border-line bg-card p-5 sm:p-6">
+          <article key={milestone.id} className="rounded-2xl border border-line bg-card p-4 sm:rounded-3xl sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-medium text-muted">Milestone {index + 1}</p>
               <div className="flex gap-1">
@@ -260,7 +260,7 @@ export function ProjectForm({
                 </Button>
               </div>
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-3 grid gap-3 sm:mt-4 sm:grid-cols-2 sm:gap-4">
               <div className="sm:col-span-2">
                 <Field label="Title">
                   <input

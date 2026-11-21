@@ -57,6 +57,7 @@ export interface ChangeRequest {
   requestedDeliverables?: string[];
   requestedCriteria?: string[];
   reason?: string;
+  reasonDetail?: string;
   requestedDeadline?: string;
   affectedMilestoneId?: string;
   previousDeadline?: string;
@@ -169,6 +170,7 @@ export interface NormalizedClientRequest {
 export interface TimelineRequestInput {
   milestoneId: string;
   reason: string;
+  reasonDetail: string;
   explanation: string;
   deadline: string;
   cost: string;
@@ -177,6 +179,7 @@ export interface TimelineRequestInput {
 export interface NormalizedTimelineRequest {
   milestoneId: string;
   reason: string;
+  reasonDetail: string;
   explanation: string;
   deadline: string;
   cost: number;

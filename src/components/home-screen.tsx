@@ -56,25 +56,25 @@ export function HomeScreen() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
         <div className="max-w-2xl">
-          <p className="text-[11px] font-medium tracking-[0.16em] text-accent uppercase">
+          <p className="text-[11px] font-medium tracking-[0.14em] text-accent uppercase sm:tracking-[0.16em]">
             Viewing as the {role}
           </p>
-          <h1 className="mt-2 font-display text-4xl tracking-tight sm:text-5xl">
+          <h1 className="mt-1.5 font-display text-3xl tracking-tight sm:mt-2 sm:text-5xl">
             Agreements in plain sight.
           </h1>
-          <p className="mt-4 text-base leading-7 text-muted">
+          <p className="mt-2 text-[15px] leading-6 text-muted sm:mt-4 sm:text-base sm:leading-7">
             {role === "freelancer"
               ? "Write what will be delivered, get it accepted, and keep every later change beside the original."
               : "Review the scope you agreed to, and approve any change before it becomes part of the work."}
           </p>
-          <p className="mt-2 text-sm leading-6 text-ink/80">
+          <p className="mt-1.5 text-sm leading-5 text-ink/80 sm:mt-2 sm:leading-6">
             {role === "freelancer"
               ? "Next, you can accept a priced scope request, counter it, or send a timeline revision."
               : "Next, you can accept a draft agreement, or approve and reject proposals waiting on you."}
           </p>
-          <p className="mt-3 text-sm text-muted">
+          <p className="mt-2 text-sm text-muted sm:mt-3">
             {plural(activeCount, "active project")} · {plural(actions.length, "pending action")}
           </p>
         </div>
@@ -93,20 +93,20 @@ export function HomeScreen() {
         )}
       </div>
 
-      <section className="mt-10">
-        <h2 className="font-display text-2xl tracking-tight">Pending actions</h2>
+      <section className="mt-7 sm:mt-10">
+        <h2 className="font-display text-xl tracking-tight sm:text-2xl">Pending actions</h2>
         <p className="mt-1 text-sm text-muted">What is waiting on you in this role.</p>
         {actions.length === 0 ? (
-          <p className="mt-4 rounded-3xl border border-dashed border-line bg-card px-5 py-8 text-sm text-muted">
+          <p className="mt-3 rounded-3xl border border-dashed border-line bg-card px-4 py-5 text-sm text-muted sm:mt-4 sm:px-5 sm:py-8">
             Nothing is waiting on you. Switch roles to see the other side of a request.
           </p>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div className="mt-3 space-y-2 sm:mt-4 sm:space-y-3">
             {actions.map((action) => (
               <Link
                 key={action.id}
                 href={action.href}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-accent/20 bg-accent-soft px-5 py-4 transition hover:border-accent/50"
+                className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-accent/20 bg-accent-soft px-4 py-3 transition hover:border-accent/50 sm:gap-3 sm:rounded-3xl sm:px-5 sm:py-4"
               >
                 <div>
                   <p className="font-medium text-ink">{action.title}</p>
@@ -114,7 +114,7 @@ export function HomeScreen() {
                     {action.projectName} · {action.detail}
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-accent">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-ink">
                   Open
                   <ArrowRight className="size-4" aria-hidden />
                 </span>
@@ -124,10 +124,10 @@ export function HomeScreen() {
         )}
       </section>
 
-      <section className="mt-12">
+      <section className="mt-8 sm:mt-12">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="font-display text-2xl tracking-tight">All projects</h2>
+            <h2 className="font-display text-xl tracking-tight sm:text-2xl">All projects</h2>
             <p className="mt-1 text-sm text-muted">Most recently updated first. Each project keeps its own agreement.</p>
           </div>
         </div>
@@ -178,12 +178,12 @@ export function HomeScreen() {
               <Link
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="block rounded-3xl border border-line bg-card p-5 transition hover:border-accent/40 sm:p-6"
+                className="block rounded-2xl border border-line bg-card p-4 transition hover:border-accent/40 sm:rounded-3xl sm:p-6"
               >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
+                <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-display text-2xl tracking-tight sm:text-3xl">{project.name}</h2>
+                      <h2 className="font-display text-xl tracking-tight sm:text-3xl">{project.name}</h2>
                       <StatusBadge
                         status={project.status}
                         label={project.status === "draft" ? "Draft" : "Agreed"}
@@ -197,14 +197,14 @@ export function HomeScreen() {
                     <p className="text-[11px] font-medium tracking-[0.14em] text-muted uppercase">
                       Current scope
                     </p>
-                    <p className="mt-1 font-display text-3xl tracking-tight">{formatInr(current)}</p>
+                    <p className="mt-0.5 font-display text-2xl tracking-tight sm:mt-1 sm:text-3xl">{formatInr(current)}</p>
                     {project.status === "accepted" && current !== agreed ? (
                       <p className="text-sm text-muted">Agreed {formatInr(agreed)}</p>
                     ) : null}
                   </div>
                 </div>
-                <p className="mt-4 max-w-3xl text-sm leading-6 text-ink/80">{project.description}</p>
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm">
+                <p className="mt-3 line-clamp-3 max-w-3xl text-sm leading-5 text-ink/80 sm:mt-4 sm:line-clamp-none sm:leading-6">{project.description}</p>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm sm:mt-5 sm:gap-3">
                   <p className="text-muted">
                     {plural(project.milestones.length, "milestone")}
                     {added > 0 ? ` · ${formatInr(added)} added` : ""} · finishes{" "}

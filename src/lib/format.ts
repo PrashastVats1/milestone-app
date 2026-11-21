@@ -1,3 +1,9 @@
+export function formatReason(reason: string, detail?: string) {
+  const specific = detail?.trim();
+  if (reason === "Other" && specific) return `Other — ${specific}`;
+  return reason;
+}
+
 export function formatInr(amount: number) {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",

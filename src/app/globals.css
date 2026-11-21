@@ -42,6 +42,15 @@ body {
 }
 
 input,
-textarea {
+textarea,
+select,
+button {
   font: inherit;
+}
+
+a:focus-visible,
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid #4338ca;
+  outline-offset: 2px;
 }

@@ -24,7 +24,7 @@ export function NewProjectScreen() {
   if (role !== "freelancer") {
     return (
       <div className="max-w-xl">
-        <h1 className="font-display text-4xl tracking-tight">Switch to the freelancer</h1>
+        <h1 className="font-display text-3xl tracking-tight sm:text-4xl">Switch to the freelancer</h1>
         <p className="mt-3 text-sm leading-6 text-muted">
           Project agreements are created as the freelancer. Use the role switcher, then come back to
           this page.
@@ -42,7 +42,7 @@ export function NewProjectScreen() {
         <ArrowLeft className="size-4" aria-hidden />
         Projects
       </Link>
-      <div className="mt-6">
+      <div className="mt-4 sm:mt-6">
         <ProjectForm
           initial={initial}
           submitLabel="Save draft"

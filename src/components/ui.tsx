@@ -6,7 +6,10 @@ export function cn(...parts: Array<string | false | null | undefined>) {
 }
 
 export const inputClass =
-  "w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent/15";
+  "w-full min-w-0 max-w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink outline-none transition placeholder:text-muted/70 focus:border-accent focus:ring-2 focus:ring-accent/15";
+
+export const actionLinkClass =
+  "inline-flex items-center rounded-full border border-line bg-white px-3.5 py-2 text-sm font-medium text-ink hover:border-ink/30";
 
 export function Field({
   label,
@@ -20,8 +23,8 @@ export function Field({
   return (
     <label className="block">
       <span className="text-sm font-medium text-ink">{label}</span>
-      {hint ? <span className="mt-0.5 block text-xs leading-5 text-muted">{hint}</span> : null}
-      <div className="mt-1.5">{children}</div>
+      {hint ? <span className="mt-0.5 block text-xs leading-4 text-muted sm:leading-5">{hint}</span> : null}
+      <div className="mt-1 sm:mt-1.5">{children}</div>
     </label>
   );
 }
@@ -65,7 +68,7 @@ export function LineEditor({
   return (
     <div className="space-y-2">
       {items.map((item, index) => (
-        <div key={index} className="flex gap-2">
+        <div key={index} className="flex min-w-0 gap-2">
           <input
             className={inputClass}
             value={item}
@@ -78,7 +81,7 @@ export function LineEditor({
           />
           <button
             type="button"
-            className="shrink-0 rounded-xl px-2 text-sm text-muted hover:bg-archive hover:text-ink"
+            className="shrink-0 rounded-xl border border-line bg-white px-3 text-sm font-medium text-ink hover:border-ink/30"
             onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))}
           >
             Remove
@@ -87,7 +90,7 @@ export function LineEditor({
       ))}
       <button
         type="button"
-        className="text-sm font-medium text-accent hover:text-ink"
+        className="rounded-full border border-line bg-white px-3 py-1.5 text-sm font-medium text-ink hover:border-ink/30"
         onClick={() => onChange([...items, ""])}
       >
         {addLabel}
@@ -116,7 +119,7 @@ export function Button({
     <button
       type={type}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50",
         buttonStyles[variant],
         className,
       )}
@@ -148,7 +151,7 @@ const changeTones: Record<ChangeStatus, string> = {
   proposed: "bg-violet-soft text-violet",
   approved: "bg-good-soft text-good",
   rejected: "bg-bad-soft text-bad",
-  declined: "bg-archive text-muted",
+  declined: "bg-archive text-ink",
 };
 
 const markerTones = {
@@ -198,12 +201,12 @@ export function Stat({
   hrefLabel?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-card px-4 py-4">
-      <p className="text-[11px] font-medium tracking-[0.16em] text-muted uppercase">{label}</p>
-      <p className="mt-2 font-display text-2xl tracking-tight text-ink">{value}</p>
-      {hint ? <p className="mt-1 text-sm text-muted">{hint}</p> : null}
+    <div className="rounded-2xl border border-line bg-card px-3.5 py-3 sm:px-4 sm:py-4">
+      <p className="text-[11px] font-medium tracking-[0.14em] text-muted uppercase sm:tracking-[0.16em]">{label}</p>
+      <p className="mt-1 font-display text-xl tracking-tight text-ink sm:mt-2 sm:text-2xl">{value}</p>
+      {hint ? <p className="mt-1 text-sm leading-5 text-muted">{hint}</p> : null}
       {href ? (
-        <a href={href} className="mt-2 inline-block text-sm font-medium text-accent">
+        <a href={href} className={cn(actionLinkClass, "mt-2 px-3 py-1.5 sm:mt-3")}>
           {hrefLabel ?? "Open"}
         </a>
       ) : null}
@@ -221,10 +224,10 @@ export function SectionHeading({
   text?: string;
 }) {
   return (
-    <div className="mb-5">
-      <p className="text-[11px] font-medium tracking-[0.16em] text-accent uppercase">{eyebrow}</p>
-      <h2 className="mt-1 font-display text-3xl tracking-tight text-ink">{title}</h2>
-      {text ? <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{text}</p> : null}
+    <div className="mb-3 sm:mb-5">
+      <p className="text-[11px] font-medium tracking-[0.14em] text-accent uppercase sm:tracking-[0.16em]">{eyebrow}</p>
+      <h2 className="mt-1 font-display text-2xl tracking-tight text-ink sm:text-3xl">{title}</h2>
+      {text ? <p className="mt-1.5 max-w-2xl text-sm leading-5 text-muted sm:mt-2 sm:leading-6">{text}</p> : null}
     </div>
   );
 }

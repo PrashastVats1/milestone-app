@@ -17,7 +17,7 @@ import { ChangeSection } from "./changes";
 import { ProjectForm } from "./project-form";
 import { MilestoneList, OriginalAgreement } from "./scope";
 import { ActivityTimeline } from "./timeline";
-import { Button, SectionHeading, Stat, StatusBadge } from "./ui";
+import { actionLinkClass, Button, SectionHeading, Stat, StatusBadge } from "./ui";
 
 export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -44,7 +44,7 @@ export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
   if (!project) {
     return (
       <div className="max-w-xl">
-        <h1 className="font-display text-4xl tracking-tight">This project is not on this device.</h1>
+        <h1 className="font-display text-3xl tracking-tight sm:text-4xl">This project is not on this device.</h1>
         <p className="mt-3 text-sm leading-6 text-muted">
           It may have been cleared with Reset demo data. Records are not shared across browsers.
         </p>
@@ -86,20 +86,32 @@ export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
   );
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-7 sm:space-y-10">
       <div>
         <BackLink />
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <h1 className="font-display text-4xl tracking-tight sm:text-5xl">{project.name}</h1>
+        <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-5 sm:gap-3">
+          <h1 className="font-display text-3xl tracking-tight sm:text-5xl">{project.name}</h1>
           <StatusBadge status="accepted" label="Agreed" />
         </div>
-        <p className="mt-3 text-sm text-muted">
+        <p className="mt-2 text-sm text-muted sm:mt-3">
           {project.clientName} · {project.clientEmail}
         </p>
-        <p className="mt-4 max-w-3xl text-base leading-7 text-ink/80">{project.description}</p>
+        <p className="mt-2 max-w-3xl text-[15px] leading-6 text-ink/80 sm:mt-4 sm:text-base sm:leading-7">{project.description}</p>
+        <nav aria-label="On this page" className="mt-3 flex flex-wrap gap-2 sm:mt-5">
+          {[
+            ["#current-scope", "Current scope"],
+            ["#changes", "Changes"],
+            ["#original-agreement", "Original agreement"],
+            ["#activity", "Activity"],
+          ].map(([href, label]) => (
+            <a key={href} href={href} className={actionLinkClass}>
+              {label}
+            </a>
+          ))}
+        </nav>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
         <Stat
           label="Originally agreed"
           value={formatInr(agreed)}
@@ -142,13 +154,13 @@ export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
         <p className="text-sm text-muted">Nothing is waiting on you. The original agreement and the change history are below.</p>
       ) : null}
 
-      <section>
+      <section id="current-scope" className="scroll-mt-36">
         <SectionHeading
           eyebrow="Now"
           title="Current scope"
           text="Original milestones are the locked agreement. Added by change means the work was approved later and did not rewrite that agreement."
         />
-        <a href="#original-agreement" className="mb-4 inline-block text-sm font-medium text-accent">
+        <a href="#original-agreement" className={`${actionLinkClass} mb-3 sm:mb-4`}>
           View the locked original agreement
         </a>
         <MilestoneList milestones={project.milestones} showSource />
@@ -172,12 +184,12 @@ function BackLink() {
 
 function ActionBanner({ title, body, href }: { title: string; body: string; href: string }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-accent/15 bg-accent-soft px-5 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/15 bg-accent-soft px-4 py-3 sm:gap-4 sm:rounded-3xl sm:px-5 sm:py-4">
       <div>
         <p className="font-medium text-ink">{title}</p>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/70">{body}</p>
+        <p className="mt-1 max-w-2xl text-sm leading-5 text-ink/70 sm:leading-6">{body}</p>
       </div>
-      <a href={href} className="text-sm font-medium text-accent">
+      <a href={href} className={actionLinkClass}>
         Go to changes
       </a>
     </div>
@@ -219,8 +231,8 @@ function ClientReview({ projectId }: { projectId: string }) {
   return (
     <div>
       <p className="text-[11px] font-medium tracking-[0.16em] text-accent uppercase">For your acceptance</p>
-      <h1 className="mt-2 font-display text-4xl tracking-tight sm:text-5xl">{project.name}</h1>
-      <p className="mt-4 max-w-3xl text-base leading-7">{project.description}</p>
+      <h1 className="mt-1.5 font-display text-3xl tracking-tight sm:mt-2 sm:text-5xl">{project.name}</h1>
+      <p className="mt-2 max-w-3xl text-[15px] leading-6 sm:mt-4 sm:text-base sm:leading-7">{project.description}</p>
       <dl className="mt-6 grid gap-4 rounded-3xl border border-line bg-card p-5 sm:grid-cols-2 sm:p-6">
         <ReviewFact label="Client" value={`${project.clientName} · ${project.clientEmail}`} />
         <ReviewFact label="Contract total" value={formatInr(project.totalAmount)} />
