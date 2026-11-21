@@ -1,11 +1,13 @@
-import { addDays, formatInr, plural } from "./format";
+import { addDays, formatDate, formatInr, plural } from "./format";
 import type {
   Activity,
   AgreementSnapshot,
   ChangeRequest,
   Milestone,
+  NormalizedClientRequest,
   NormalizedProject,
   NormalizedProposal,
+  NormalizedTimelineRequest,
   Project,
 } from "./types";
 
@@ -92,23 +94,62 @@ export function acceptAgreement(project: Project): Project {
   };
 }
 
-export function requestChange(project: Project, title: string, description: string): Project {
+export function requestChange(project: Project, input: NormalizedClientRequest): Project {
   if (project.status !== "accepted") {
     throw new Error("Accept the agreement before requesting a change.");
   }
-  const cleanTitle = title.trim();
-  const cleanDescription = description.trim();
-  if (!cleanTitle || !cleanDescription) {
-    throw new Error("Describe the change you want.");
-  }
 
-  const activity = entry("client", `Requested a change: “${cleanTitle}”.`);
+  const activity = entry(
+    "client",
+    `Requested a scope change: “${input.title}” at ${formatInr(input.proposal.cost)} and ${plural(input.proposal.days, "extra day")}.`,
+  );
   const change: ChangeRequest = {
     id: crypto.randomUUID(),
-    title: cleanTitle,
-    description: cleanDescription,
+    kind: "scope",
+    title: input.title,
+    description: input.description,
     requestedAt: activity.at,
     status: "requested",
+    requestedCost: input.proposal.cost,
+    requestedDays: input.proposal.days,
+    requestedDeliverables: input.proposal.deliverables,
+    requestedCriteria: input.proposal.acceptanceCriteria,
+  };
+
+  return {
+    ...project,
+    updatedAt: activity.at,
+    changeRequests: [...project.changeRequests, change],
+    activity: [...project.activity, activity],
+  };
+}
+
+export function requestTimelineChange(project: Project, input: NormalizedTimelineRequest): Project {
+  if (project.status !== "accepted") {
+    throw new Error("Accept the agreement before requesting a change.");
+  }
+  const milestone = project.milestones.find((item) => item.id === input.milestoneId);
+  if (!milestone) throw new Error("That milestone is not on this project.");
+
+  const costNote = input.cost > 0 ? ` and ${formatInr(input.cost)} extra` : "";
+  const activity = entry(
+    "freelancer",
+    `Requested a timeline revision for “${milestone.title}”: due ${formatDate(input.deadline)}${costNote}. Reason: ${input.reason}.`,
+  );
+  const change: ChangeRequest = {
+    id: crypto.randomUUID(),
+    kind: "timeline",
+    title: milestone.title,
+    description: input.explanation,
+    reason: input.reason,
+    requestedAt: activity.at,
+    status: "proposed",
+    affectedMilestoneId: milestone.id,
+    requestedDeadline: input.deadline,
+    proposedCost: input.cost,
+    proposedAt: activity.at,
+    previousDeadline: milestone.deadline,
+    previousAmount: milestone.amount,
   };
 
   return {
@@ -132,7 +173,7 @@ export function proposeChange(
 
   const activity = entry(
     "freelancer",
-    `Proposed ${formatInr(proposal.cost)} and ${plural(proposal.days, "extra day")} for “${change.title}”.`,
+    `Countered “${change.title}” at ${formatInr(proposal.cost)} and ${plural(proposal.days, "extra day")}.`,
   );
   const next: ChangeRequest = {
     ...change,
@@ -178,6 +219,33 @@ export function declineChange(project: Project, changeId: string, note: string):
   };
 }
 
+export function acceptChangeAsProposed(project: Project, changeId: string): Project {
+  const change = project.changeRequests.find((item) => item.id === changeId);
+  if (!change || change.status !== "requested" || change.kind === "timeline") {
+    throw new Error("This request can no longer be accepted as proposed.");
+  }
+  if (
+    change.requestedCost === undefined ||
+    change.requestedDays === undefined ||
+    (change.requestedDeliverables ?? []).length === 0 ||
+    (change.requestedCriteria ?? []).length === 0
+  ) {
+    throw new Error("This request has no price or timeline. Send a counteroffer instead.");
+  }
+
+  const message = `Accepted “${change.title}” as proposed. Added ${formatInr(change.requestedCost)} and ${plural(change.requestedDays, "extra day")} to the current scope.`;
+  return approveScopeChange(project, change, {
+    cost: change.requestedCost,
+    days: change.requestedDays,
+    note: "Accepted as the client proposed.",
+    deliverables: change.requestedDeliverables ?? [],
+    acceptanceCriteria: change.requestedCriteria ?? [],
+    actor: "freelancer",
+    message,
+    decisionNote: "",
+  });
+}
+
 export function decideChange(
   project: Project,
   changeId: string,
@@ -189,58 +257,150 @@ export function decideChange(
     throw new Error("There is no proposal waiting for a decision.");
   }
 
+  if (change.kind === "timeline") {
+    return decideTimelineChange(project, change, decision, note);
+  }
+
   if (decision === "rejected") {
-    const activity = entry(
-      "client",
-      `Rejected the proposal for “${change.title}”. The scope is unchanged.`,
+    return rejectChange(
+      project,
+      change,
+      `Rejected the counteroffer for “${change.title}”. The scope is unchanged.`,
+      note,
     );
-    const next: ChangeRequest = {
-      ...change,
-      status: "rejected",
-      decidedAt: activity.at,
-      decisionNote: note.trim(),
-    };
-    return {
-      ...project,
-      updatedAt: activity.at,
-      changeRequests: project.changeRequests.map((item) => (item.id === changeId ? next : item)),
-      activity: [...project.activity, activity],
-    };
   }
 
   const days = change.proposedDays ?? 0;
   const cost = change.proposedCost ?? 0;
-  const deadline = addDays(project.expectedCompletion, days);
+  return approveScopeChange(project, change, {
+    cost,
+    days,
+    note: change.proposalNote ?? "",
+    deliverables: change.proposedDeliverables ?? [],
+    acceptanceCriteria: change.proposedCriteria ?? [],
+    actor: "client",
+    message: `Approved “${change.title}”. Added ${formatInr(cost)} and ${plural(days, "extra day")} to the current scope.`,
+    decisionNote: note.trim(),
+  });
+}
+
+function rejectChange(project: Project, change: ChangeRequest, message: string, note: string): Project {
+  const activity = entry("client", message);
+  const next: ChangeRequest = {
+    ...change,
+    status: "rejected",
+    decidedAt: activity.at,
+    decisionNote: note.trim(),
+  };
+  return {
+    ...project,
+    updatedAt: activity.at,
+    changeRequests: project.changeRequests.map((item) => (item.id === change.id ? next : item)),
+    activity: [...project.activity, activity],
+  };
+}
+
+function approveScopeChange(
+  project: Project,
+  change: ChangeRequest,
+  input: NormalizedProposal & {
+    actor: Activity["actor"];
+    message: string;
+    decisionNote: string;
+  },
+): Project {
+  const deadline = addDays(project.expectedCompletion, input.days);
   const milestoneId = crypto.randomUUID();
   const milestone: Milestone = {
     id: milestoneId,
     title: change.title,
     description: change.description,
-    deliverables: [...(change.proposedDeliverables ?? [])],
-    acceptanceCriteria: [...(change.proposedCriteria ?? [])],
-    amount: cost,
+    deliverables: [...input.deliverables],
+    acceptanceCriteria: [...input.acceptanceCriteria],
+    amount: input.cost,
     deadline,
     source: "change",
     changeRequestId: change.id,
   };
-  const activity = entry(
-    "client",
-    `Approved “${change.title}”. Added ${formatInr(cost)} and ${plural(days, "extra day")} to the current scope.`,
-  );
+  const activity = entry(input.actor, input.message);
   const next: ChangeRequest = {
     ...change,
     status: "approved",
+    proposedCost: input.cost,
+    proposedDays: input.days,
+    proposalNote: input.note,
+    proposedDeliverables: [...input.deliverables],
+    proposedCriteria: [...input.acceptanceCriteria],
+    proposedAt: change.proposedAt ?? activity.at,
     decidedAt: activity.at,
-    decisionNote: note.trim(),
+    decisionNote: input.decisionNote,
     milestoneId,
   };
 
   return {
     ...project,
-    expectedCompletion: days > 0 ? deadline : project.expectedCompletion,
+    expectedCompletion: input.days > 0 ? deadline : project.expectedCompletion,
     milestones: [...project.milestones, milestone],
-    changeRequests: project.changeRequests.map((item) => (item.id === changeId ? next : item)),
+    changeRequests: project.changeRequests.map((item) => (item.id === change.id ? next : item)),
     updatedAt: activity.at,
     activity: [...project.activity, activity],
+  };
+}
+
+function decideTimelineChange(
+  project: Project,
+  change: ChangeRequest,
+  decision: "approved" | "rejected",
+  note: string,
+): Project {
+  const milestone = project.milestones.find((item) => item.id === change.affectedMilestoneId);
+  if (!milestone) throw new Error("The milestone for this revision is no longer on the project.");
+
+  if (decision === "rejected") {
+    return rejectChange(
+      project,
+      change,
+      `Rejected the timeline revision for “${milestone.title}”. The agreed milestone is unchanged.`,
+      note,
+    );
+  }
+
+  if (!change.requestedDeadline) throw new Error("This revision has no deadline.");
+
+  const extra = change.proposedCost ?? 0;
+  const previousDeadline = change.previousDeadline ?? milestone.deadline;
+  const previousAmount = change.previousAmount ?? milestone.amount;
+  const activity = entry(
+    "client",
+    `Approved the timeline revision for “${milestone.title}”. Deadline moves from ${formatDate(previousDeadline)} to ${formatDate(change.requestedDeadline)}${extra > 0 ? `, and ${formatInr(extra)} is added` : ""}.`,
+  );
+  const nextMilestone: Milestone = {
+    ...milestone,
+    deadline: change.requestedDeadline,
+    amount: milestone.amount + extra,
+    agreedDeadline: milestone.agreedDeadline ?? milestone.deadline,
+    agreedAmount: milestone.agreedAmount ?? milestone.amount,
+  };
+  const next: ChangeRequest = {
+    ...change,
+    status: "approved",
+    decidedAt: activity.at,
+    decisionNote: note.trim(),
+    previousDeadline,
+    previousAmount,
+    milestoneId: milestone.id,
+  };
+
+  return {
+    ...project,
+    expectedCompletion:
+      change.requestedDeadline > project.expectedCompletion
+        ? change.requestedDeadline
+        : project.expectedCompletion,
+    milestones: project.milestones.map((item) => (item.id === milestone.id ? nextMilestone : item)),
+    changeRequests: project.changeRequests.map((item) => (item.id === change.id ? next : item)),
+    updatedAt: activity.at,
+    activity: [...project.activity, activity],
+    originalAgreement: project.originalAgreement,
   };
 }

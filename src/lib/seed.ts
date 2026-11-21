@@ -1,4 +1,4 @@
-import { formatInr } from "./format";
+import { formatDate, formatInr } from "./format";
 import type { Milestone, PersistedState, Project } from "./types";
 
 const discovery: Milestone = {
@@ -115,6 +115,7 @@ export function createSeedProject(): Project {
         description:
           "Add a Hindi version of the festive collection: translated names for 24 pieces and a festive landing page. Photography and new products are not included.",
         requestedAt: "2026-11-12T16:10:00+05:30",
+        kind: "scope",
         status: "approved",
         proposedCost: 35000,
         proposedDays: 10,
@@ -131,6 +132,7 @@ export function createSeedProject(): Project {
         title: "Photography direction for 12 pieces",
         description:
           "A shot list, lighting notes, and crop guide so the studio photographer can match the catalog. The shoot itself stays with the studio.",
+        kind: "scope",
         requestedAt: "2026-11-18T12:40:00+05:30",
         status: "proposed",
         proposedCost: 22000,
@@ -149,12 +151,33 @@ export function createSeedProject(): Project {
         proposedAt: "2026-11-19T11:15:00+05:30",
       },
       {
-        id: "seed-cr-insert",
-        title: "Packaging insert for festive orders",
+        id: "seed-cr-note",
+        kind: "scope",
+        title: "Festive gift note",
         description:
-          "A single printed insert, front and back, for festive orders. Printing stays with the studio. Box dielines and extra inserts are not included.",
-        requestedAt: "2026-11-20T17:45:00+05:30",
+          "Write a short gift note for festive orders. Printing and packing stay with the studio. Extra card sizes are not included.",
+        requestedAt: "2026-11-21T10:15:00+05:30",
         status: "requested",
+        requestedCost: 4000,
+        requestedDays: 2,
+        requestedDeliverables: ["Gift note copy for the festive insert"],
+        requestedCriteria: ["Client approves the wording before it is delivered"],
+      },
+      {
+        id: "seed-cr-design-time",
+        kind: "timeline",
+        title: "Visual design",
+        description:
+          "The collection grid needs an extra layout pass after the type tests, so the design milestone needs more time.",
+        reason: "Technical blocker",
+        requestedAt: "2026-11-21T11:40:00+05:30",
+        status: "proposed",
+        affectedMilestoneId: design.id,
+        requestedDeadline: "2026-12-12",
+        proposedCost: 8000,
+        proposedAt: "2026-11-21T11:40:00+05:30",
+        previousDeadline: design.deadline,
+        previousAmount: design.amount,
       },
     ],
     activity: [
@@ -208,13 +231,19 @@ export function createSeedProject(): Project {
       },
       {
         id: "seed-a9",
-        at: "2026-11-20T17:45:00+05:30",
+        at: "2026-11-21T10:15:00+05:30",
         actor: "client",
-        message: "Requested a change: “Packaging insert for festive orders”.",
+        message: `Requested a scope change: “Festive gift note” at ${formatInr(4000)} and 2 extra days.`,
+      },
+      {
+        id: "seed-a10",
+        at: "2026-11-21T11:40:00+05:30",
+        actor: "freelancer",
+        message: `Requested a timeline revision for “Visual design”: due ${formatDate("2026-12-12")} and ${formatInr(8000)} extra. Reason: Technical blocker.`,
       },
     ],
     createdAt: "2026-11-03T09:30:00+05:30",
-    updatedAt: "2026-11-20T17:45:00+05:30",
+    updatedAt: "2026-11-21T11:40:00+05:30",
   };
 }
 

@@ -1,12 +1,17 @@
-import { addDays, parseAmount, todayIso } from "./format";
+import { addDays, formatDate, formatInr, parseAmount, todayIso } from "./format";
 import type {
+  ClientRequestInput,
   MilestoneInput,
+  NormalizedClientRequest,
   NormalizedProject,
   NormalizedProposal,
+  NormalizedTimelineRequest,
   Project,
   ProjectInput,
   ProposalInput,
+  TimelineRequestInput,
 } from "./types";
+import { TIMELINE_REASONS } from "./types";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -99,6 +104,20 @@ export function validateProjectInput(
     if (!title) errors.push(`${label} needs a title.`);
     if (amount === null) errors.push(`${label} needs an amount.`);
     if (!DATE.test(milestone.deadline)) errors.push(`${label} needs a deadline.`);
+    if (DATE.test(milestone.deadline) && DATE.test(input.startDate) && milestone.deadline < input.startDate) {
+      errors.push(
+        `${label} is due ${formatDate(milestone.deadline)}, before the project starts on ${formatDate(input.startDate)}.`,
+      );
+    }
+    if (
+      DATE.test(milestone.deadline) &&
+      DATE.test(input.expectedCompletion) &&
+      milestone.deadline > input.expectedCompletion
+    ) {
+      errors.push(
+        `${label} is due ${formatDate(milestone.deadline)}, after the expected completion on ${formatDate(input.expectedCompletion)}.`,
+      );
+    }
     if (deliverables.length === 0) errors.push(`${label} needs at least one deliverable.`);
     if (acceptanceCriteria.length === 0) {
       errors.push(`${label} needs at least one acceptance criterion.`);
@@ -120,6 +139,13 @@ export function validateProjectInput(
       },
     ];
   });
+
+  const milestoneTotal = milestones.reduce((sum, milestone) => sum + milestone.amount, 0);
+  if (totalAmount !== null && milestones.length === input.milestones.length && milestoneTotal !== totalAmount) {
+    errors.push(
+      `Milestone amounts add up to ${formatInr(milestoneTotal)}. The project total is ${formatInr(totalAmount)}. Match them before saving.`,
+    );
+  }
 
   if (errors.length > 0 || totalAmount === null) return { ok: false, errors };
   return {
@@ -167,6 +193,46 @@ export function validateProposal(
       note: input.note.trim(),
       deliverables,
       acceptanceCriteria,
+    },
+  };
+}
+
+export function validateClientRequest(
+  input: ClientRequestInput,
+): { ok: true; value: NormalizedClientRequest } | { ok: false; error: string } {
+  const title = input.title.trim();
+  const description = input.description.trim();
+  if (!title || !description) {
+    return { ok: false, error: "Describe the change you want." };
+  }
+  const proposal = validateProposal(input);
+  if (!proposal.ok) return proposal;
+  return { ok: true, value: { title, description, proposal: proposal.value } };
+}
+
+export function validateTimelineRequest(
+  input: TimelineRequestInput,
+): { ok: true; value: NormalizedTimelineRequest } | { ok: false; error: string } {
+  const explanation = input.explanation.trim();
+  const reason = input.reason.trim();
+  const cost = input.cost.trim() === "" ? 0 : parseAmount(input.cost);
+
+  if (!input.milestoneId) return { ok: false, error: "Choose the milestone this affects." };
+  if (!TIMELINE_REASONS.includes(reason as (typeof TIMELINE_REASONS)[number])) {
+    return { ok: false, error: "Choose a reason for the revision." };
+  }
+  if (!explanation) return { ok: false, error: "Explain why the timeline needs to change." };
+  if (!DATE.test(input.deadline)) return { ok: false, error: "Set the revised deadline." };
+  if (cost === null) return { ok: false, error: "Enter additional cost, or leave it blank for none." };
+
+  return {
+    ok: true,
+    value: {
+      milestoneId: input.milestoneId,
+      reason,
+      explanation,
+      deadline: input.deadline,
+      cost,
     },
   };
 }

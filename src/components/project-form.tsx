@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowUp, Plus } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { formatInr, parseAmount } from "@/lib/format";
 import type { ProjectInput } from "@/lib/types";
 import { blankMilestone } from "@/lib/validate";
@@ -12,16 +12,22 @@ export function ProjectForm({
   submitLabel,
   intro,
   savedNote,
+  allowRepeat = false,
   onSubmit,
 }: {
   initial: ProjectInput;
   submitLabel: string;
   intro: string;
   savedNote?: string | null;
+  allowRepeat?: boolean;
   onSubmit: (input: ProjectInput) => { ok: true } | { ok: false; errors: string[] };
 }) {
   const [input, setInput] = useState(initial);
   const [errors, setErrors] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [totalEdited, setTotalEdited] = useState(initial.totalAmount.trim() !== "");
+  const busy = useRef(false);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   const milestoneSum = input.milestones.reduce(
     (sum, milestone) => sum + (parseAmount(milestone.amount) ?? 0),
@@ -29,13 +35,31 @@ export function ProjectForm({
   );
   const contract = parseAmount(input.totalAmount);
 
-  function updateMilestone(id: string, patch: Partial<ProjectInput["milestones"][number]>) {
-    setInput((current) => ({
+  function replaceMilestones(
+    current: ProjectInput,
+    milestones: ProjectInput["milestones"],
+  ): ProjectInput {
+    const previous = current.milestones.reduce(
+      (sum, milestone) => sum + (parseAmount(milestone.amount) ?? 0),
+      0,
+    );
+    const next = milestones.reduce((sum, milestone) => sum + (parseAmount(milestone.amount) ?? 0), 0);
+    const contract = parseAmount(current.totalAmount);
+    const followMilestones = !totalEdited && (current.totalAmount.trim() === "" || contract === previous);
+    return {
       ...current,
-      milestones: current.milestones.map((milestone) =>
-        milestone.id === id ? { ...milestone, ...patch } : milestone,
+      milestones,
+      totalAmount: followMilestones && next > 0 ? String(next) : current.totalAmount,
+    };
+  }
+
+  function updateMilestone(id: string, patch: Partial<ProjectInput["milestones"][number]>) {
+    setInput((current) =>
+      replaceMilestones(
+        current,
+        current.milestones.map((milestone) => (milestone.id === id ? { ...milestone, ...patch } : milestone)),
       ),
-    }));
+    );
   }
 
   function moveMilestone(index: number, direction: -1 | 1) {
@@ -51,8 +75,18 @@ export function ProjectForm({
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (busy.current) return;
+    busy.current = true;
+    setSaving(true);
     const result = onSubmit(input);
     setErrors(result.ok ? [] : result.errors);
+    if (!result.ok || allowRepeat) {
+      busy.current = false;
+      setSaving(false);
+    }
+    if (!result.ok) {
+      requestAnimationFrame(() => errorRef.current?.scrollIntoView({ block: "start" }));
+    }
   }
 
   return (
@@ -66,10 +100,12 @@ export function ProjectForm({
       {savedNote ? (
         <p className="rounded-2xl bg-good-soft px-4 py-3 text-sm text-good">{savedNote}</p>
       ) : null}
-      <ErrorList errors={errors} />
+      <div ref={errorRef} className="scroll-mt-28">
+        <ErrorList errors={errors} />
+      </div>
 
       <section className="rounded-3xl border border-line bg-card p-5 sm:p-7">
-        <h2 className="font-display text-2xl tracking-tight">Project</h2>
+        <h2 className="font-display text-2xl tracking-tight">1 · Project</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Field label="Project name">
@@ -125,24 +161,35 @@ export function ProjectForm({
               onChange={(event) => setInput({ ...input, expectedCompletion: event.target.value })}
             />
           </Field>
-          <Field label="Total project amount" hint="The contract total, in INR.">
+          <Field label="Total project amount" hint="The contract total, in INR. A typed total stays until you replace it.">
             <MoneyField
               value={input.totalAmount}
               placeholder="180000"
-              onChange={(totalAmount) => setInput({ ...input, totalAmount })}
+              onChange={(totalAmount) => {
+                setTotalEdited(true);
+                setInput({ ...input, totalAmount });
+              }}
             />
+            {contract !== null && contract !== milestoneSum ? (
+              <p className="mt-2 text-sm text-bad">
+                Milestone amounts add up to {formatInr(milestoneSum)}. This contract total is {formatInr(contract)}.
+              </p>
+            ) : null}
           </Field>
           <div className="flex items-end">
             <div className="w-full rounded-2xl bg-archive px-4 py-3 text-sm">
-              <p className="text-muted">Milestones add up to</p>
+              <p className="text-muted">Calculated from milestones</p>
               <p className="mt-1 font-display text-2xl text-ink">{formatInr(milestoneSum)}</p>
               {contract !== null && contract !== milestoneSum ? (
                 <button
                   type="button"
                   className="mt-2 font-medium text-accent"
-                  onClick={() => setInput({ ...input, totalAmount: String(milestoneSum) })}
+                  onClick={() => {
+                    setTotalEdited(true);
+                    setInput({ ...input, totalAmount: String(milestoneSum) });
+                  }}
                 >
-                  Match the contract total
+                  Replace the contract total with the milestone sum
                 </button>
               ) : (
                 <p className="mt-1 text-muted">
@@ -159,7 +206,7 @@ export function ProjectForm({
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-2xl tracking-tight">Milestones</h2>
+            <h2 className="font-display text-2xl tracking-tight">2 · Milestones</h2>
             <p className="mt-1 text-sm text-muted">
               Each one needs deliverables, acceptance criteria, an amount, and a deadline.
             </p>
@@ -201,10 +248,12 @@ export function ProjectForm({
                   className="px-3 text-bad"
                   disabled={input.milestones.length === 1}
                   onClick={() =>
-                    setInput((current) => ({
-                      ...current,
-                      milestones: current.milestones.filter((item) => item.id !== milestone.id),
-                    }))
+                    setInput((current) =>
+                      replaceMilestones(
+                        current,
+                        current.milestones.filter((item) => item.id !== milestone.id),
+                      ),
+                    )
                   }
                 >
                   Remove
@@ -269,8 +318,8 @@ export function ProjectForm({
       </section>
 
       <div className="flex justify-end">
-        <Button type="submit" className="px-6">
-          {submitLabel}
+        <Button type="submit" className="px-6" disabled={saving}>
+          {saving ? "Saving…" : submitLabel}
         </Button>
       </div>
     </form>

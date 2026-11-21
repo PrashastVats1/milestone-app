@@ -9,6 +9,16 @@ export type ChangeStatus =
   | "rejected"
   | "declined";
 
+export type ChangeKind = "scope" | "timeline";
+
+export const TIMELINE_REASONS = [
+  "Underestimated complexity",
+  "Technical blocker",
+  "Dependency",
+  "Unforeseen circumstance",
+  "Other",
+] as const;
+
 export interface Milestone {
   id: string;
   title: string;
@@ -19,6 +29,8 @@ export interface Milestone {
   deadline: string;
   source: "original" | "change";
   changeRequestId?: string;
+  agreedDeadline?: string;
+  agreedAmount?: number;
 }
 
 export interface AgreementSnapshot {
@@ -39,6 +51,16 @@ export interface ChangeRequest {
   description: string;
   requestedAt: string;
   status: ChangeStatus;
+  kind?: ChangeKind;
+  requestedCost?: number;
+  requestedDays?: number;
+  requestedDeliverables?: string[];
+  requestedCriteria?: string[];
+  reason?: string;
+  requestedDeadline?: string;
+  affectedMilestoneId?: string;
+  previousDeadline?: string;
+  previousAmount?: number;
   proposedCost?: number;
   proposedDays?: number;
   proposalNote?: string;
@@ -126,4 +148,36 @@ export interface NormalizedProposal {
   note: string;
   deliverables: string[];
   acceptanceCriteria: string[];
+}
+
+export interface ClientRequestInput {
+  title: string;
+  description: string;
+  cost: string;
+  days: string;
+  note: string;
+  deliverables: string[];
+  acceptanceCriteria: string[];
+}
+
+export interface NormalizedClientRequest {
+  title: string;
+  description: string;
+  proposal: NormalizedProposal;
+}
+
+export interface TimelineRequestInput {
+  milestoneId: string;
+  reason: string;
+  explanation: string;
+  deadline: string;
+  cost: string;
+}
+
+export interface NormalizedTimelineRequest {
+  milestoneId: string;
+  reason: string;
+  explanation: string;
+  deadline: string;
+  cost: number;
 }

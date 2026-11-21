@@ -10,6 +10,9 @@ export function ActivityTimeline({ activity }: { activity: Activity[] }) {
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
         A shared log of the agreement, the acceptance, and every change after it.
       </p>
+      {items.length === 0 ? (
+        <p className="mt-6 text-sm text-muted">Nothing has been recorded yet.</p>
+      ) : null}
       <ol className="mt-6 space-y-5 border-l border-line pl-5">
         {items.map((item) => (
           <li key={item.id} className="relative">

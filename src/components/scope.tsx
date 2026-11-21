@@ -28,6 +28,12 @@ export function MilestoneList({
             <div className="text-left sm:text-right">
               <p className="font-display text-2xl tracking-tight">{formatInr(milestone.amount)}</p>
               <p className="mt-1 text-sm text-muted">Due {formatDate(milestone.deadline)}</p>
+              {milestone.agreedDeadline || milestone.agreedAmount !== undefined ? (
+                <p className="mt-1 text-xs text-muted">
+                  Originally agreed {formatInr(milestone.agreedAmount ?? milestone.amount)} due{" "}
+                  {formatDate(milestone.agreedDeadline ?? milestone.deadline)}
+                </p>
+              ) : null}
             </div>
           </div>
           {showSource ? (
@@ -84,7 +90,7 @@ export function OriginalAgreement({ project }: { project: Project }) {
   if (!original) return null;
 
   return (
-    <section className="rounded-3xl bg-archive px-5 py-6 sm:px-8 sm:py-8">
+    <section id="original-agreement" className="scroll-mt-28 rounded-3xl bg-archive px-5 py-6 sm:px-8 sm:py-8">
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-ink text-white">
           <Lock className="size-4" aria-hidden />

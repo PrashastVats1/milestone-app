@@ -4,16 +4,23 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   acceptAgreement,
   buildProject,
+  acceptChangeAsProposed,
   decideChange,
   declineChange,
   proposeChange,
   requestChange,
+  requestTimelineChange,
   updateDraft,
 } from "./actions";
 import { loadState, saveState } from "./repository";
 import { createSeedState } from "./seed";
-import type { PersistedState, ProjectInput, Role } from "./types";
-import { validateProjectInput, validateProposal } from "./validate";
+import type { ClientRequestInput, PersistedState, ProjectInput, Role, TimelineRequestInput } from "./types";
+import {
+  validateClientRequest,
+  validateProjectInput,
+  validateProposal,
+  validateTimelineRequest,
+} from "./validate";
 
 type Store = {
   hydrated: boolean;
@@ -26,8 +33,12 @@ type Store = {
   acceptAgreement: (id: string) => { ok: true } | { ok: false; error: string };
   requestChange: (
     id: string,
-    title: string,
-    description: string,
+    input: ClientRequestInput,
+  ) => { ok: true } | { ok: false; error: string };
+  acceptChange: (projectId: string, changeId: string) => { ok: true } | { ok: false; error: string };
+  requestTimelineChange: (
+    id: string,
+    input: TimelineRequestInput,
   ) => { ok: true } | { ok: false; error: string };
   proposeChange: (
     projectId: string,
@@ -108,8 +119,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       },
       acceptAgreement: (id) => mutate(state, id, acceptAgreement, replace),
-      requestChange: (id, title, description) =>
-        mutate(state, id, (project) => requestChange(project, title, description), replace),
+      requestChange: (id, input) => {
+        const validated = validateClientRequest(input);
+        if (!validated.ok) return validated;
+        return mutate(state, id, (project) => requestChange(project, validated.value), replace);
+      },
+      acceptChange: (projectId, changeId) =>
+        mutate(state, projectId, (project) => acceptChangeAsProposed(project, changeId), replace),
+      requestTimelineChange: (id, input) => {
+        const validated = validateTimelineRequest(input);
+        if (!validated.ok) return validated;
+        return mutate(state, id, (project) => requestTimelineChange(project, validated.value), replace);
+      },
       proposeChange: (projectId, changeId, input) => {
         const validated = validateProposal(input);
         if (!validated.ok) return validated;

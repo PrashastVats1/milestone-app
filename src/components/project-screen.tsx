@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { formatDate, formatInr } from "@/lib/format";
 import {
   agreedAmount,
   changeAmount,
   currentScopeAmount,
+  orderedChanges,
   pendingProposalAmount,
 } from "@/lib/selectors";
 import { useMilestone } from "@/lib/store";
@@ -27,6 +28,14 @@ export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
     if (!store.hydrated) return;
     document.title = project ? `${project.name} · Milestone` : "Project · Milestone";
   }, [project, store.hydrated]);
+
+  const projectId = project?.id;
+  useEffect(() => {
+    if (!store.hydrated || !projectId) return;
+    const target = window.location.hash.replace("#", "");
+    if (!target) return;
+    document.getElementById(target)?.scrollIntoView();
+  }, [store.hydrated, projectId]);
 
   if (!store.hydrated) {
     return <p className="text-sm text-muted">Opening your agreements…</p>;
@@ -72,6 +81,9 @@ export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
   const proposed = project.changeRequests.filter((change) => change.status === "proposed").length;
   const freelancerAction = store.role === "freelancer" && requested > 0;
   const clientAction = store.role === "client" && proposed > 0;
+  const nextChange = orderedChanges(project.changeRequests, store.role).find((change) =>
+    store.role === "freelancer" ? change.status === "requested" : change.status === "proposed",
+  );
 
   return (
     <div className="space-y-10">
@@ -88,7 +100,13 @@ export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Originally agreed" value={formatInr(agreed)} hint="Locked at acceptance" />
+        <Stat
+          label="Originally agreed"
+          value={formatInr(agreed)}
+          hint="Locked at acceptance"
+          href="#original-agreement"
+          hrefLabel="View original agreement"
+        />
         <Stat
           label="Current scope"
           value={formatInr(current)}
@@ -108,14 +126,16 @@ export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
 
       {freelancerAction ? (
         <ActionBanner
-          title={requested === 1 ? "A change needs a proposal" : `${requested} changes need proposals`}
-          body="Set the extra cost and time. The client decides before the work joins the scope."
+          title={requested === 1 ? "A change needs your response" : `${requested} changes need your response`}
+          body="Accepting a priced request adds it to the current scope immediately. A counteroffer still needs the client’s approval. Declining leaves the scope unchanged."
+          href={nextChange ? `#change-${nextChange.id}` : "#changes"}
         />
       ) : null}
       {clientAction ? (
         <ActionBanner
-          title={proposed === 1 ? "A proposal needs your decision" : `${proposed} proposals need a decision`}
-          body="Approving adds the work to the current scope. The original agreement stays as accepted."
+          title={proposed === 1 ? "A change needs your approval" : `${proposed} changes need your approval`}
+          body="Approving updates the current scope. The original agreement stays as accepted."
+          href={nextChange ? `#change-${nextChange.id}` : "#changes"}
         />
       ) : null}
       {!freelancerAction && !clientAction ? (
@@ -126,8 +146,11 @@ export function ProjectScreen({ params }: { params: Promise<{ id: string }> }) {
         <SectionHeading
           eyebrow="Now"
           title="Current scope"
-          text="This is the work as it stands today. Milestones added by an approved change are marked."
+          text="Original milestones are the locked agreement. Added by change means the work was approved later and did not rewrite that agreement."
         />
+        <a href="#original-agreement" className="mb-4 inline-block text-sm font-medium text-accent">
+          View the locked original agreement
+        </a>
         <MilestoneList milestones={project.milestones} showSource />
       </section>
 
@@ -147,14 +170,14 @@ function BackLink() {
   );
 }
 
-function ActionBanner({ title, body }: { title: string; body: string }) {
+function ActionBanner({ title, body, href }: { title: string; body: string; href: string }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-accent/15 bg-accent-soft px-5 py-4">
       <div>
         <p className="font-medium text-ink">{title}</p>
         <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/70">{body}</p>
       </div>
-      <a href="#changes" className="text-sm font-medium text-accent">
+      <a href={href} className="text-sm font-medium text-accent">
         Go to changes
       </a>
     </div>
@@ -171,6 +194,7 @@ function DraftEditor({ projectId }: { projectId: string }) {
     <ProjectForm
       key={project.id}
       initial={projectToInput(project)}
+      allowRepeat
       submitLabel="Save draft"
       savedNote={saved ? "Draft saved. Switch to Client when you want to accept it." : null}
       intro="Edit anything until the client accepts. After acceptance, the original is locked and further work goes through a change request."
@@ -187,6 +211,7 @@ function ClientReview({ projectId }: { projectId: string }) {
   const { projects, acceptAgreement } = useMilestone();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const busy = useRef(false);
   const project = projects.find((item) => item.id === projectId);
   if (!project) return null;
   const milestoneSum = currentScopeAmount(project);
@@ -225,8 +250,13 @@ function ClientReview({ projectId }: { projectId: string }) {
                 <Button
                   variant="light"
                   onClick={() => {
+                    if (busy.current) return;
+                    busy.current = true;
                     const result = acceptAgreement(project.id);
-                    if (!result.ok) setError(result.error);
+                    if (!result.ok) {
+                      busy.current = false;
+                      setError(result.error);
+                    }
                   }}
                 >
                   Lock and accept

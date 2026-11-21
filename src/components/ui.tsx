@@ -151,15 +151,25 @@ const changeTones: Record<ChangeStatus, string> = {
   declined: "bg-archive text-muted",
 };
 
+const markerTones = {
+  client: "bg-party-client-soft text-party-client",
+  freelancer: "bg-party-freelancer-soft text-party-freelancer",
+  scope: "bg-kind-scope-soft text-kind-scope",
+  timeline: "bg-kind-timeline-soft text-kind-timeline",
+};
+
 export function StatusBadge({
   status,
   label,
+  tone,
 }: {
   status: AgreementStatus | ChangeStatus | "added" | "original";
   label: string;
+  tone?: keyof typeof markerTones;
 }) {
-  const tone =
-    status === "added"
+  const color = tone
+    ? markerTones[tone]
+    : status === "added"
       ? "bg-violet-soft text-violet"
       : status === "original"
         ? "bg-archive text-ink"
@@ -168,7 +178,7 @@ export function StatusBadge({
           : changeTones[status as ChangeStatus];
 
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium", tone)}>
+    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium", color)}>
       {label}
     </span>
   );
@@ -178,16 +188,25 @@ export function Stat({
   label,
   value,
   hint,
+  href,
+  hrefLabel,
 }: {
   label: string;
   value: string;
   hint?: string;
+  href?: string;
+  hrefLabel?: string;
 }) {
   return (
     <div className="rounded-2xl border border-line bg-card px-4 py-4">
       <p className="text-[11px] font-medium tracking-[0.16em] text-muted uppercase">{label}</p>
       <p className="mt-2 font-display text-2xl tracking-tight text-ink">{value}</p>
       {hint ? <p className="mt-1 text-sm text-muted">{hint}</p> : null}
+      {href ? (
+        <a href={href} className="mt-2 inline-block text-sm font-medium text-accent">
+          {hrefLabel ?? "Open"}
+        </a>
+      ) : null}
     </div>
   );
 }

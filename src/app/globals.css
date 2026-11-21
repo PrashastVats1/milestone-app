@@ -19,6 +19,14 @@
   --color-bad-soft: #fde8ee;
   --color-violet: #6d28d9;
   --color-violet-soft: #f3e8ff;
+  --color-party-client: #1e3a5f;
+  --color-party-client-soft: #e7eef6;
+  --color-party-freelancer: #0f4c5c;
+  --color-party-freelancer-soft: #e5f3f6;
+  --color-kind-scope: #7c4a1e;
+  --color-kind-scope-soft: #f6ecdf;
+  --color-kind-timeline: #1d4e89;
+  --color-kind-timeline-soft: #e7f0fa;
 }
 
 body {

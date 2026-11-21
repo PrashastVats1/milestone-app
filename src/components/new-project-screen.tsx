@@ -45,7 +45,7 @@ export function NewProjectScreen() {
       <div className="mt-6">
         <ProjectForm
           initial={initial}
-          submitLabel="Create project"
+          submitLabel="Save draft"
           intro="This stays a draft until the client accepts it. You can edit milestones until then. Switch to Client in the header when you want to demo the acceptance."
           onSubmit={(input) => {
             const result = createProject(input);
